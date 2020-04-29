@@ -1,0 +1,16 @@
+version: '{build}'
+image: Visual Studio 2019
+configuration: Release
+platform: Any CPU
+skip_tags: true
+
+environment:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+build_script:
+- cmd: .\build.cmd
+
+test: off
+
+artifacts:
+- path: src\Serilog.Sinks.File.Archive\**\Release\Serilog.Sinks.File.Archive.*.nupkg

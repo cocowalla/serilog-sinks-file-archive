@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.File.Archive", "src\Serilog.Sinks.File.Archive\Serilog.Sinks.File.Archive.csproj", "{54A0544A-53F1-40CC-958F-C09513D85B7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Serilog.Sinks.File.Archive.Test", "test\Serilog.Sinks.File.Archive.Test\Serilog.Sinks.File.Archive.Test.csproj", "{40D90C54-9E07-4BAD-B1A8-82F7D63555EF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{54A0544A-53F1-40CC-958F-C09513D85B7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54A0544A-53F1-40CC-958F-C09513D85B7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54A0544A-53F1-40CC-958F-C09513D85B7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54A0544A-53F1-40CC-958F-C09513D85B7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40D90C54-9E07-4BAD-B1A8-82F7D63555EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40D90C54-9E07-4BAD-B1A8-82F7D63555EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40D90C54-9E07-4BAD-B1A8-82F7D63555EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40D90C54-9E07-4BAD-B1A8-82F7D63555EF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

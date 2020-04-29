@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>Plugin for the Serilog File sink that archives completed log files, optionally compressing them.</Description>
+        <VersionPrefix>1.0.0</VersionPrefix>
+        <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+        <Authors>Colin Anderson</Authors>
+        <Copyright>Copyright © Colin Anderson 2020</Copyright>
+        <TargetFrameworks>net45;netstandard1.6;netstandard2.0;netstandard2.1</TargetFrameworks>
+        <AssemblyName>Serilog.Sinks.File.Archive</AssemblyName>
+        <RootNamespace>Serilog.Sinks.File.Archive</RootNamespace>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <RepositoryUrl>https://github.com/cocowalla/serilog-sinks-file-archive</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+        <!-- Don't reference the full NETStandard.Library -->
+        <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <IsPackable>true</IsPackable>
+        <PackageTags>serilog;file;compression;gzip;archive</PackageTags>
+        <PackageProjectUrl>https://github.com/cocowalla/serilog-sinks-file-archive</PackageProjectUrl>
+        <PackageId>Serilog.Sinks.File.Archive</PackageId>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+        <Reference Include="System" />
+        <Reference Include="System.Core" />
+        <Reference Include="Microsoft.CSharp" />
+    </ItemGroup>
+
+    <ItemGroup Condition=" '$(TargetFramework)' != 'net45' ">
+        <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+            <_Parameter1>$(AssemblyName).Test</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
+
+</Project>
