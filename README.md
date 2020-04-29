@@ -1,6 +1,6 @@
 # Serilog.Sinks.File.Archive
 [![NuGet](https://img.shields.io/nuget/v/Serilog.Sinks.File.Archive.svg)](https://www.nuget.org/packages/Serilog.Sinks.File.Archive)
-[![Build status](https://ci.appveyor.com/api/projects/status/88es7b73dbc47b9s?svg=true)](https://ci.appveyor.com/project/cocowalla/serilog-sinks-file-archive)
+[![Build status](https://ci.appveyor.com/api/projects/status/iljyx2bcv722aqhx?svg=true)](https://ci.appveyor.com/project/cocowalla/serilog-sinks-file-archive)
 
 A `FileLifecycleHooks`-based plugin for the [Serilog File Sink](https://github.com/serilog/serilog-sinks-file) that works with rolling log files, archiving completed log files before they are deleted by Serilog's retention mechanism.
 
