@@ -17,7 +17,7 @@ To get started, install the latest [Serilog.Sinks.File.Archive](https://www.nuge
 Install-Package Serilog.Sinks.File.Archive -Version 1.0.0
 ```
 
-To enable archiving, use one of the new `LoggerSinkConfiguration` extensions that has a `FileLifecycleHooks` argument, and create a new `ArchiveHooks`. For example, to write GZip compressed logs to another directory:
+To enable archiving, use one of the new `LoggerSinkConfiguration` extensions that has a `FileLifecycleHooks` argument, and create a new `ArchiveHooks`. For example, to write GZip compressed logs to another directory (the directory will be created if it doesn't already exist):
 
 ```csharp
 Log.Logger = new LoggerConfiguration()
@@ -44,6 +44,17 @@ Log.Logger = new LoggerConfiguration()
 Note that archival only works with *rolling* log files, as files are only deleted by Serilog's rolling file retention mechanism.
 
 As is [standard with Serilog](https://github.com/serilog/serilog/wiki/Lifecycle-of-Loggers#in-all-apps), it's important to call `Log.CloseAndFlush();` before your application ends.
+
+### Token Replacement
+The `targetDirectory` constructor parameter supports replacement of tokens at runtime.
+
+Tokens take the form `{Name:FormatString}`, where `Name` is the name of a supported token, and `FormatString` defines how the token value should be formatted.
+
+At present, 2 tokens are supported, `UtcDate` and `Date`. These use [standard .NET date format strings](https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings) to insert components of the current date/time into the path. For example, you may wish to organise archived files into folders based on the current **year** and **month**:
+
+```csharp
+new ArchiveHooks(CompressionLevel.Fastest, "C:\\Archive\\{UtcDate:yyyy}\\{UtcDate:MM}")
+```
 
 ### JSON appsettings.json configuration
 
