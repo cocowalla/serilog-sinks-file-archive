@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <Description>Plugin for the Serilog File sink that archives completed log files, optionally compressing them.</Description>
-        <VersionPrefix>1.0.0</VersionPrefix>
+        <VersionPrefix>1.0.1</VersionPrefix>
         <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
         <Authors>Colin Anderson</Authors>
         <Copyright>Copyright © Colin Anderson 2020</Copyright>
@@ -13,7 +13,9 @@
         <RepositoryUrl>https://github.com/cocowalla/serilog-sinks-file-archive</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
         <!-- Don't reference the full NETStandard.Library -->
         <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     </PropertyGroup>
@@ -34,9 +36,10 @@
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="Microsoft.CSharp" />
+        <Reference Include="System.IO.Compression" />
     </ItemGroup>
 
-    <ItemGroup Condition=" '$(TargetFramework)' != 'net45' ">
+    <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
         <PackageReference Include="System.IO.Compression" Version="4.3.0" />
     </ItemGroup>
 
