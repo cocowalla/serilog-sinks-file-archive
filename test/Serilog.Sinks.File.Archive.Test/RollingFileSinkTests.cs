@@ -17,6 +17,42 @@ namespace Serilog.Sinks.File.Archive.Tests
             Some.LogEvent()
         };
 
+        // Test for removing old archive files in the same directory
+        [Fact]
+        public void Should_remove_old_archives()
+        {
+            var retainedFiles = 1;
+            var archiveWrapper = new ArchiveHooks(retainedFiles);
+
+            using (var temp = TempFolder.ForCaller())
+            {
+                var path = temp.AllocateFilename("log");
+
+                // Write events, such that we end up with 2 deleted files and 1 retained file
+                WriteLogEvents(path, archiveWrapper, LogEvents);
+
+                // Get all the files in the test directory
+                var files = Directory.GetFiles(temp.Path)
+                    .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                // We should have a single log file, and 2 gz files
+                files.Count(x => x.EndsWith("log")).ShouldBe(1);
+                files.Count(x => x.EndsWith("gz")).ShouldBe(retainedFiles);
+
+                // Ensure the data was GZip compressed, by decompressing and comparing against what we wrote
+                int i = LogEvents.Length - retainedFiles - 1;
+                foreach (var gzipFile in files.Where(x => x.EndsWith("gz")))
+                {
+                    var lines = Utils.DecompressLines(gzipFile);
+
+                    lines.Count.ShouldBe(1);
+                    lines[0].ShouldEndWith(LogEvents[i].MessageTemplate.Text);
+                    i++;
+                }
+            }
+        }
+
         // Test for compressing log files in the same directory
         [Fact]
         public void Should_compress_deleting_log_files_in_place()

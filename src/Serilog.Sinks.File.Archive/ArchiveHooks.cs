@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using Serilog.Debugging;
 
 namespace Serilog.Sinks.File.Archive
@@ -13,6 +14,7 @@ namespace Serilog.Sinks.File.Archive
     public class ArchiveHooks : FileLifecycleHooks
     {
         private readonly CompressionLevel compressionLevel;
+        private readonly int retainedFileCountLimit;
         private readonly string targetDirectory;
 
         /// <summary>
@@ -27,10 +29,22 @@ namespace Serilog.Sinks.File.Archive
         public ArchiveHooks(CompressionLevel compressionLevel = CompressionLevel.Fastest, string targetDirectory = null)
         {
             if (compressionLevel == CompressionLevel.NoCompression && targetDirectory == null)
-                throw new ArgumentException("Either compressionLevel or targetDirectory must be set");
+                throw new ArgumentException($"Either {nameof(compressionLevel)} or {nameof(targetDirectory)} must be set");
 
             this.compressionLevel = compressionLevel;
             this.targetDirectory = targetDirectory;
+        }
+
+        public ArchiveHooks(int retainedFileCountLimit, CompressionLevel compressionLevel = CompressionLevel.Fastest)
+        {
+            if (retainedFileCountLimit <= 0)
+                throw new ArgumentException($"{nameof(retainedFileCountLimit)} must be greater than zero", nameof(retainedFileCountLimit));
+            if (compressionLevel == CompressionLevel.NoCompression)
+                throw new ArgumentException($"{nameof(compressionLevel)} must not be 'NoCompression' when using {nameof(retainedFileCountLimit)}", nameof(compressionLevel));
+
+            this.compressionLevel = compressionLevel;
+            this.retainedFileCountLimit = retainedFileCountLimit;
+            this.targetDirectory = null;
         }
 
         public override void OnFileDeleting(string path)
@@ -70,11 +84,37 @@ namespace Serilog.Sinks.File.Archive
                         sourceStream.CopyTo(compressStream);
                     }
                 }
+                //only apply archive file limit if we are archiving to a non tokenised path (constant path)
+                if (this.retainedFileCountLimit > 0 && !this.IsArchivePathTokenised)
+                {
+                    RemoveExcessFiles(currentTargetDir);
+                }
             }
             catch (Exception ex)
             {
                 SelfLog.WriteLine("Error while archiving file {0}: {1}", path, ex);
                 throw;
+            }
+        }
+
+        private bool IsArchivePathTokenised => this.targetDirectory is not null && TokenExpander.Expand(this.targetDirectory) != this.targetDirectory;
+
+        private void RemoveExcessFiles(string folder)
+        {
+            var searchPattern = this.compressionLevel != CompressionLevel.NoCompression
+                    ? "*.gz"
+                    : "*.*";
+            var filesToDelete = Directory.GetFiles(folder, searchPattern).Select(f => new FileInfo(f)).OrderByDescending(f => f.LastWriteTime).Skip(this.retainedFileCountLimit).ToList();
+            foreach (var file in filesToDelete)
+            {
+                try
+                {
+                    file.Delete();
+                }
+                catch (Exception ex)
+                {
+                    SelfLog.WriteLine("Error while deleting file {0}: {1}", file.FullName, ex);
+                }
             }
         }
     }
