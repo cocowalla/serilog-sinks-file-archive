@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Serilog.Debugging;
@@ -46,6 +46,10 @@ namespace Serilog.Sinks.File.Archive
             }
 
             return source;
+        }
+        public static bool IsTokenised(string source)
+        {
+            return TryFindNextToken(source, 0, out var _);
         }
 
         private static bool TryFindNextToken(string source, int startIdx, out Token token)

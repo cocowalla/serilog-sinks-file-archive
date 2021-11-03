@@ -40,7 +40,7 @@ namespace Serilog.Sinks.File.Archive
         {
             if (retainedFileCountLimit <= 0)
                 throw new ArgumentException($"{nameof(retainedFileCountLimit)} must be greater than zero", nameof(retainedFileCountLimit));
-            if (targetDirectory is not null && TokenExpander.Expand(targetDirectory) != targetDirectory)
+            if (targetDirectory is not null && TokenExpander.IsTokenised(targetDirectory))
                 throw new ArgumentException($"{nameof(targetDirectory)} must not be tokenised when using {nameof(retainedFileCountLimit)}", nameof(targetDirectory));
             if (compressionLevel == CompressionLevel.NoCompression)
                 throw new ArgumentException($"{nameof(compressionLevel)} must not be 'NoCompression' when using {nameof(retainedFileCountLimit)}", nameof(compressionLevel));
@@ -100,7 +100,7 @@ namespace Serilog.Sinks.File.Archive
             }
         }
 
-        private bool IsArchivePathTokenised => this.targetDirectory is not null && TokenExpander.Expand(this.targetDirectory) != this.targetDirectory;
+        private bool IsArchivePathTokenised => this.targetDirectory is not null && TokenExpander.IsTokenised(this.targetDirectory);
 
         private void RemoveExcessFiles(string folder)
         {
