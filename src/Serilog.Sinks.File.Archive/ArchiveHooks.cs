@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -104,7 +105,12 @@ namespace Serilog.Sinks.File.Archive
             var searchPattern = this.compressionLevel != CompressionLevel.NoCompression
                     ? "*.gz"
                     : "*.*";
-            var filesToDelete = Directory.GetFiles(folder, searchPattern).Select(f => new FileInfo(f)).OrderByDescending(f => f.LastWriteTime).Skip(this.retainedFileCountLimit).ToList();
+
+            var filesToDelete = Directory.GetFiles(folder, searchPattern)
+                .Select(f => new FileInfo(f))
+                .OrderByDescending(f => f, LogFileComparer.Default)
+                .Skip(this.retainedFileCountLimit)
+                .ToList();
             foreach (var file in filesToDelete)
             {
                 try
@@ -115,6 +121,25 @@ namespace Serilog.Sinks.File.Archive
                 {
                     SelfLog.WriteLine("Error while deleting file {0}: {1}", file.FullName, ex);
                 }
+            }
+        }
+
+        private class LogFileComparer : IComparer<FileInfo>
+        {
+            public static IComparer<FileInfo> Default = new LogFileComparer();
+
+            //This will not work correctly when the file uses a date format where lexicographical order does not correspond to chronological order but frankly, if you
+            //are using non ISO 8601 date formats in your files you should be shot.
+            //It would be best if the file sink could expose a way to sort files chronologically because I think LastWriteTime is probably not determisitic enough.
+            public int Compare(FileInfo x, FileInfo y)
+            {
+                if (x is null && y is null)
+                    return 0;
+                if (x is null)
+                    return -1;
+                if (y is null)
+                    return 1;
+                return string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
             }
         }
     }

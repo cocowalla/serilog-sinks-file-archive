@@ -36,7 +36,7 @@ namespace Serilog.Sinks.File.Archive.Tests
                     .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
-                // We should have a single log file, and 2 gz files
+                // We should have a single log file, and 'retainedFiles' gz files
                 files.Count(x => x.EndsWith("log")).ShouldBe(1);
                 files.Count(x => x.EndsWith("gz")).ShouldBe(retainedFiles);
 
@@ -210,7 +210,7 @@ namespace Serilog.Sinks.File.Archive.Tests
                 foreach (var logEvent in logEvents)
                 {
                     log.Write(logEvent);
-                }
+                }                
             }
         }
     }
