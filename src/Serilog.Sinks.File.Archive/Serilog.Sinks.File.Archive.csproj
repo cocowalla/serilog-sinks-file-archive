@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <Description>Plugin for the Serilog File sink that archives completed log files, optionally compressing them.</Description>
@@ -6,7 +6,7 @@
         <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
         <Authors>Colin Anderson</Authors>
         <Copyright>Copyright © Colin Anderson 2020</Copyright>
-        <TargetFrameworks>net45;netstandard1.6;netstandard2.0;netstandard2.1</TargetFrameworks>
+        <TargetFrameworks>net45;netstandard1.6;netstandard2.0;netstandard2.1;net6.0</TargetFrameworks>
         <AssemblyName>Serilog.Sinks.File.Archive</AssemblyName>
         <RootNamespace>Serilog.Sinks.File.Archive</RootNamespace>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
