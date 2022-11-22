@@ -9,6 +9,6 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 [assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyInformationalVersion("1.0.2")]
+[assembly: AssemblyInformationalVersion("1.0.3")]
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Serilog.Sinks.File.Archive.Tests")]

@@ -14,7 +14,7 @@ The following archive methods are supported:
 To get started, install the latest [Serilog.Sinks.File.Archive](https://www.nuget.org/packages/Serilog.Sinks.File.Archive) package from NuGet:
 
 ```powershell
-Install-Package Serilog.Sinks.File.Archive -Version 1.0.2
+Install-Package Serilog.Sinks.File.Archive
 ```
 
 To enable archiving, use one of the new `LoggerSinkConfiguration` extensions that has a `FileLifecycleHooks` argument, and create a new `ArchiveHooks`. For example, to write GZip compressed logs to another directory (the directory will be created if it doesn't already exist):
