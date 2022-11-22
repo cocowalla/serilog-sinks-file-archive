@@ -13,6 +13,7 @@
         <RepositoryUrl>https://github.com/cocowalla/serilog-sinks-file-archive</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
@@ -41,6 +42,10 @@
 
     <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
         <PackageReference Include="System.IO.Compression" Version="4.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="../../README.md" Pack="true" PackagePath="/" />
     </ItemGroup>
 
     <ItemGroup>
