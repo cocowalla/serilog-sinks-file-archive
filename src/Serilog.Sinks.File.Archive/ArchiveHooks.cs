@@ -47,7 +47,7 @@ namespace Serilog.Sinks.File.Archive
 
             this.compressionLevel = compressionLevel;
             this.retainedFileCountLimit = retainedFileCountLimit;
-            this.targetDirectory = null;
+            this.targetDirectory = targetDirectory;
         }
 
         public override void OnFileDeleting(string path)
