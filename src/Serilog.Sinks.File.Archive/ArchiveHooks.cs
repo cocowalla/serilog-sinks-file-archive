@@ -42,8 +42,6 @@ namespace Serilog.Sinks.File.Archive
                 throw new ArgumentException($"{nameof(retainedFileCountLimit)} must be greater than zero", nameof(retainedFileCountLimit));
             if (targetDirectory is not null && TokenExpander.IsTokenised(targetDirectory))
                 throw new ArgumentException($"{nameof(targetDirectory)} must not be tokenised when using {nameof(retainedFileCountLimit)}", nameof(targetDirectory));
-            if (compressionLevel == CompressionLevel.NoCompression)
-                throw new ArgumentException($"{nameof(compressionLevel)} must not be 'NoCompression' when using {nameof(retainedFileCountLimit)}", nameof(compressionLevel));
 
             this.compressionLevel = compressionLevel;
             this.retainedFileCountLimit = retainedFileCountLimit;
