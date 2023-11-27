@@ -27,6 +27,8 @@
         <PackageProjectUrl>https://github.com/cocowalla/serilog-sinks-file-archive</PackageProjectUrl>
         <PackageId>Serilog.Sinks.File.Archive</PackageId>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <SignAssembly>True</SignAssembly>
+        <AssemblyOriginatorKeyFile>../../serilog-sinks-file-archive.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
 
     <ItemGroup>
