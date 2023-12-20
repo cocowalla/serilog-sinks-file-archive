@@ -4,6 +4,8 @@
         <TargetFrameworks>net452;netcoreapp3.1;net6.0</TargetFrameworks>
         <AssemblyName>Serilog.Sinks.File.Archive.Tests</AssemblyName>
         <RootNamespace>Serilog.Sinks.File.Archive.Tests</RootNamespace>
+        <SignAssembly>True</SignAssembly>
+        <AssemblyOriginatorKeyFile>../../serilog-sinks-file-archive-test.snk</AssemblyOriginatorKeyFile>
     </PropertyGroup>
 
     <ItemGroup>
