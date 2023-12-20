@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <Description>Plugin for the Serilog File sink that archives completed log files, optionally compressing them.</Description>
-        <VersionPrefix>1.0.3</VersionPrefix>
+        <VersionPrefix>1.0.4</VersionPrefix>
         <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
         <Authors>Colin Anderson</Authors>
         <Copyright>Copyright © Colin Anderson 2020</Copyright>
