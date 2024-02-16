@@ -36,14 +36,25 @@ namespace Serilog.Sinks.File.Archive
             this.targetDirectory = targetDirectory;
         }
 
+        /// <summary>
+        /// Create a new ArchiveHooks, which will archive completed log files before they are deleted by Serilog's retention mechanism
+        /// </summary>
+        /// <param name="retainedFileCountLimit">
+        /// Limit of Archived files.
+        /// <param name="compressionLevel">
+        /// Level of GZIP compression to use. Use CompressionLevel.NoCompression if no compression is required
+        /// </param>
+        /// <param name="targetDirectory">
+        /// Directory in which to archive files to. Use null if compressed, archived files should remain in the same folder
+        /// </param>
         public ArchiveHooks(int retainedFileCountLimit, CompressionLevel compressionLevel = CompressionLevel.Fastest, string targetDirectory = null)
         {
             if (retainedFileCountLimit <= 0)
                 throw new ArgumentException($"{nameof(retainedFileCountLimit)} must be greater than zero", nameof(retainedFileCountLimit));
             if (targetDirectory is not null && TokenExpander.IsTokenised(targetDirectory))
                 throw new ArgumentException($"{nameof(targetDirectory)} must not be tokenised when using {nameof(retainedFileCountLimit)}", nameof(targetDirectory));
-            if (compressionLevel == CompressionLevel.NoCompression)
-                throw new ArgumentException($"{nameof(compressionLevel)} must not be 'NoCompression' when using {nameof(retainedFileCountLimit)}", nameof(compressionLevel));
+            if (compressionLevel == CompressionLevel.NoCompression && targetDirectory == null)
+                throw new ArgumentException($"Either {nameof(compressionLevel)} or {nameof(targetDirectory)} must be set");
 
             this.compressionLevel = compressionLevel;
             this.retainedFileCountLimit = retainedFileCountLimit;
