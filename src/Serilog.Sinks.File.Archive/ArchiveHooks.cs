@@ -98,7 +98,8 @@ namespace Serilog.Sinks.File.Archive
                         sourceStream.CopyTo(compressStream);
                     }
                 }
-                //only apply archive file limit if we are archiving to a non tokenised path (constant path)
+
+                // Only apply archive file limit if we are archiving to a non-tokenised path (a constant path)
                 if (this.retainedFileCountLimit > 0 && !this.IsArchivePathTokenised)
                 {
                     RemoveExcessFiles(currentTargetDir);
@@ -124,6 +125,7 @@ namespace Serilog.Sinks.File.Archive
                 .OrderByDescending(f => f, LogFileComparer.Default)
                 .Skip(this.retainedFileCountLimit)
                 .ToList();
+
             foreach (var file in filesToDelete)
             {
                 try
@@ -141,9 +143,9 @@ namespace Serilog.Sinks.File.Archive
         {
             public static IComparer<FileInfo> Default = new LogFileComparer();
 
-            //This will not work correctly when the file uses a date format where lexicographical order does not correspond to chronological order but frankly, if you
-            //are using non ISO 8601 date formats in your files you should be shot.
-            //It would be best if the file sink could expose a way to sort files chronologically because I think LastWriteTime is probably not determisitic enough.
+            // This will not work correctly when the file uses a date format where lexicographical order does not 
+            // correspond to chronological order - but frankly, if you are using non ISO 8601 date formats in your 
+            // files you should be shot :)
             public int Compare(FileInfo x, FileInfo y)
             {
                 if (x is null && y is null)
@@ -152,7 +154,8 @@ namespace Serilog.Sinks.File.Archive
                     return -1;
                 if (y is null)
                     return 1;
-                return string.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
+
+                return String.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
             }
         }
     }
