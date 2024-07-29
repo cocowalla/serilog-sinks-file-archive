@@ -28,8 +28,9 @@ namespace Serilog.Sinks.File.Archive.Tests
             {
                 var path = temp.AllocateFilename("log");
 
-                // Write events, such that we end up with 2 deleted files and 1 retained file
-                WriteLogEvents(path, archiveWrapper, LogEvents);
+                var logEvents = GenerateLogEvents(1002);
+                // Write events, such that we end up with 1000 deleted files and 1 retained file
+                WriteLogEvents(path, archiveWrapper, logEvents);
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
@@ -41,13 +42,13 @@ namespace Serilog.Sinks.File.Archive.Tests
                 files.Count(x => x.EndsWith("gz")).ShouldBe(retainedFiles);
 
                 // Ensure the data was GZip compressed, by decompressing and comparing against what we wrote
-                int i = LogEvents.Length - retainedFiles - 1;
+                int i = logEvents.Length - retainedFiles - 1;
                 foreach (var gzipFile in files.Where(x => x.EndsWith("gz")))
                 {
                     var lines = Utils.DecompressLines(gzipFile);
 
                     lines.Count.ShouldBe(1);
-                    lines[0].ShouldEndWith(LogEvents[i].MessageTemplate.Text);
+                    lines[0].ShouldEndWith(logEvents[i].MessageTemplate.Text);
                     i++;
                 }
             }
@@ -195,6 +196,19 @@ namespace Serilog.Sinks.File.Archive.Tests
                 // Ensure the directory name contains the expanded date token
                 targetDirs[0].ShouldEndWith(DateTime.Now.ToString("yyyy"));
             }
+        }
+		
+		/// <summary>
+        /// Generate array log events with custom size 
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        private LogEvent[] GenerateLogEvents(int count)
+        {
+            var logEvents = new LogEvent[count];
+            for (var x = 0; x < count; x++)
+                logEvents[x] = Some.LogEvent();
+            return logEvents;
         }
 
         /// <summary>

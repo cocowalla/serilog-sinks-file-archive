@@ -154,6 +154,10 @@ namespace Serilog.Sinks.File.Archive
                     return -1;
                 if (y is null)
                     return 1;
+				if (x.Name.Length > y.Name.Length)
+                    return 1;
+                if (y.Name.Length > x.Name.Length)
+                    return -1;
 
                 return String.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
             }
