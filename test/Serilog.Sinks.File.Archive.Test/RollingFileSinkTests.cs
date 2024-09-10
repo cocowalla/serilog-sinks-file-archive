@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -11,17 +12,13 @@ namespace Serilog.Sinks.File.Archive.Tests
 {
     public class RollingFileSinkTests
     {
-        private static readonly LogEvent[] LogEvents = {
-            Some.LogEvent(),
-            Some.LogEvent(),
-            Some.LogEvent()
-        };
+        private static readonly LogEvent[] LogEvents = GenerateLogEvents(3).ToArray();
 
         // Test for removing old archive files in the same directory
         [Fact]
         public void Should_remove_old_archives()
         {
-            var retainedFiles = 1;
+            const int retainedFiles = 1;
             var archiveWrapper = new ArchiveHooks(retainedFiles);
 
             using (var temp = TempFolder.ForCaller())
@@ -48,6 +45,48 @@ namespace Serilog.Sinks.File.Archive.Tests
 
                     lines.Count.ShouldBe(1);
                     lines[0].ShouldEndWith(LogEvents[i].MessageTemplate.Text);
+                    i++;
+                }
+            }
+        }
+
+        // Regression test for #19: https://github.com/cocowalla/serilog-sinks-file-archive/issues/19
+        // Serilog RollingFileSink uses a 3-digit zero-filled suffix to denote the file index, but we want archive
+        // rolling to continue to work when Serilog is configured to write 1,000+ files.
+        [Fact]
+        public void Should_remove_many_old_archives()
+        {
+            const int retainedFiles = 1;
+            var archiveWrapper = new ArchiveHooks(retainedFiles);
+            var logEvents = GenerateLogEvents(1_002).ToArray();
+
+            using (var temp = TempFolder.ForCaller())
+            {
+                var path = temp.AllocateFilename("log");
+
+                // Write events, such that we end up with 1,001 deleted files and 1 retained file
+                WriteLogEvents(path, archiveWrapper, logEvents);
+
+                // Get all the files in the test directory
+                var files = Directory.GetFiles(temp.Path)
+                    .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                // We should have a single log file, and 'retainedFiles' 1 gz files
+                files.Count(x => x.EndsWith("log")).ShouldBe(1);
+                files.Count(x => x.EndsWith("gz")).ShouldBe(retainedFiles);
+
+                files.Single(x => x.EndsWith("gz")).ShouldEndWith("_1000.log.gz");
+                files.Single(x => x.EndsWith("log")).ShouldEndWith("_1001.log");
+
+                // Ensure the data was GZip compressed, by decompressing and comparing against what we wrote
+                int i = logEvents.Length - retainedFiles - 1;
+                foreach (var gzipFile in files.Where(x => x.EndsWith("gz")))
+                {
+                    var lines = Utils.DecompressLines(gzipFile);
+
+                    lines.Count.ShouldBe(1);
+                    lines[0].ShouldEndWith(logEvents[i].MessageTemplate.Text);
                     i++;
                 }
             }
@@ -210,7 +249,15 @@ namespace Serilog.Sinks.File.Archive.Tests
                 foreach (var logEvent in logEvents)
                 {
                     log.Write(logEvent);
-                }                
+                }
+            }
+        }
+
+        private static IEnumerable<LogEvent> GenerateLogEvents(int count)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                yield return Some.LogEvent();
             }
         }
     }

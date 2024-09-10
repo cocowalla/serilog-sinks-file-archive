@@ -39,8 +39,7 @@ namespace Serilog.Sinks.File.Archive
         /// <summary>
         /// Create a new ArchiveHooks, which will archive completed log files before they are deleted by Serilog's retention mechanism
         /// </summary>
-        /// <param name="retainedFileCountLimit">
-        /// Limit of Archived files.
+        /// <param name="retainedFileCountLimit">Limit of Archived files.</param>
         /// <param name="compressionLevel">
         /// Level of GZIP compression to use. Use CompressionLevel.NoCompression if no compression is required
         /// </param>
@@ -141,10 +140,10 @@ namespace Serilog.Sinks.File.Archive
 
         private class LogFileComparer : IComparer<FileInfo>
         {
-            public static IComparer<FileInfo> Default = new LogFileComparer();
+            public static readonly IComparer<FileInfo> Default = new LogFileComparer();
 
-            // This will not work correctly when the file uses a date format where lexicographical order does not 
-            // correspond to chronological order - but frankly, if you are using non ISO 8601 date formats in your 
+            // This will not work correctly when the file uses a date format where lexicographical order does not
+            // correspond to chronological order - but frankly, if you are using non ISO 8601 date formats in your
             // files you should be shot :)
             public int Compare(FileInfo x, FileInfo y)
             {
@@ -154,6 +153,10 @@ namespace Serilog.Sinks.File.Archive
                     return -1;
                 if (y is null)
                     return 1;
+                if (x.Name.Length > y.Name.Length)
+                    return 1;
+                if (y.Name.Length > x.Name.Length)
+                    return -1;
 
                 return String.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
             }
