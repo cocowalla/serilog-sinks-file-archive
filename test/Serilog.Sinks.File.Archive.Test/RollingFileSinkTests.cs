@@ -58,30 +58,40 @@ namespace Serilog.Sinks.File.Archive.Tests
         {
             const int retainedFiles = 1;
             var archiveWrapper = new ArchiveHooks(retainedFiles);
-            var logEvents = GenerateLogEvents(1_002).ToArray();
+            var noRemoveWrapper = new ArchiveHooks(5000);
+            var eventsCnt = 1_002;
+            var logEvents = GenerateLogEvents(eventsCnt).ToArray();
 
             using (var temp = TempFolder.ForCaller())
             {
                 var path = temp.AllocateFilename("log");
+                var otherLogPath = Path.Combine(temp.Path, "other-log.log");
 
                 // Write events, such that we end up with 1,001 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, logEvents);
+                WriteLogEvents(otherLogPath, noRemoveWrapper, logEvents);
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
                     .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
                     .ToArray();
 
-                // We should have a single log file, and 'retainedFiles' 1 gz files
-                files.Count(x => x.EndsWith("log")).ShouldBe(1);
-                files.Count(x => x.EndsWith("gz")).ShouldBe(retainedFiles);
+                var otherLogPrefix = Path.Combine(temp.Path, Path.GetFileNameWithoutExtension(otherLogPath));
 
-                files.Single(x => x.EndsWith("gz")).ShouldEndWith("_1000.log.gz");
-                files.Single(x => x.EndsWith("log")).ShouldEndWith("_1001.log");
+                // We should have a single log file, and 'retainedFiles' 1 gz files
+                files.Count(x => x.EndsWith("log") && !x.StartsWith(otherLogPrefix)).ShouldBe(1);
+                files.Count(x => x.EndsWith("gz") && !x.StartsWith(otherLogPrefix)).ShouldBe(retainedFiles);
+
+                files.Single(x => x.EndsWith("gz") && !x.StartsWith(otherLogPrefix)).ShouldEndWith("_1000.log.gz");
+                files.Single(x => x.EndsWith("log") && !x.StartsWith(otherLogPrefix)).ShouldEndWith("_1001.log");
+
+                // other logs remains untouched
+                files.Count(x => x.EndsWith("log") && x.StartsWith(otherLogPrefix)).ShouldBe(1);
+                files.Count(x => x.EndsWith("gz") && x.StartsWith(otherLogPrefix)).ShouldBe(eventsCnt - 1);
 
                 // Ensure the data was GZip compressed, by decompressing and comparing against what we wrote
                 int i = logEvents.Length - retainedFiles - 1;
-                foreach (var gzipFile in files.Where(x => x.EndsWith("gz")))
+                foreach (var gzipFile in files.Where(x => x.EndsWith("gz") && !x.StartsWith(otherLogPrefix)))
                 {
                     var lines = Utils.DecompressLines(gzipFile);
 
@@ -245,6 +255,19 @@ namespace Serilog.Sinks.File.Archive.Tests
             using (var log = new LoggerConfiguration()
                 .WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, retainedFileCountLimit: 1, hooks: hooks)
                 .CreateLogger())
+            {
+                foreach (var logEvent in logEvents)
+                {
+                    log.Write(logEvent);
+                }
+            }
+        }
+
+        private static void WriteLogEventsNoRemove(string path, ArchiveHooks hooks, LogEvent[] logEvents)
+        {
+            using (var log = new LoggerConfiguration()
+                       .WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, retainedFileCountLimit: 2000, hooks: hooks)
+                       .CreateLogger())
             {
                 foreach (var logEvent in logEvents)
                 {
