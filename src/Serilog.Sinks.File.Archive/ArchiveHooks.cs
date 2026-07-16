@@ -147,18 +147,22 @@ namespace Serilog.Sinks.File.Archive
             // files you should be shot :)
             public int Compare(FileInfo x, FileInfo y)
             {
+
                 if (x is null && y is null)
                     return 0;
                 if (x is null)
                     return -1;
                 if (y is null)
                     return 1;
-                if (x.Name.Length > y.Name.Length)
-                    return 1;
-                if (y.Name.Length > x.Name.Length)
-                    return -1;
 
-                return String.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
+
+                string Normalize(string name) => System.Text.RegularExpressions.Regex.Replace(
+                    name,
+                    @"\d+",
+                    m => m.Value.PadLeft(5, '0')
+                );
+
+                return string.Compare(Normalize(x.Name), Normalize(y.Name), StringComparison.OrdinalIgnoreCase);
             }
         }
     }
