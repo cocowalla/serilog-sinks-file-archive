@@ -115,9 +115,9 @@ namespace Serilog.Sinks.File.Archive
 			}
 		}
 
-        private bool IsArchivePathTokenised => this.targetDirectory is not null && TokenExpander.IsTokenised(this.targetDirectory);
+    private bool IsArchivePathTokenised => this.targetDirectory is not null && TokenExpander.IsTokenised(this.targetDirectory);
 
-        private void RemoveExcessFiles(string folder, string filePath)
+    private void RemoveExcessFiles(string folder, string filePath)
 		{
 			lock (ArchiveLock)
 			{
