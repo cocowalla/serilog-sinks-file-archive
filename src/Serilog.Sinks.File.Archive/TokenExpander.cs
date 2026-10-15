@@ -19,8 +19,8 @@ namespace Serilog.Sinks.File.Archive
 
         private static readonly IDictionary<string, Func<string, Token, string>> Expanders = new Dictionary<string, Func<string, Token, string>>
         {
-            { "Date", (source, token) => DateTime.Now.ToString(token.Format) },
-            { "UtcDate", (source, token) => DateTime.UtcNow.ToString(token.Format) }
+            { "Date", (_, token) => DateTime.Now.ToString(token.Format) },
+            { "UtcDate", (_, token) => DateTime.UtcNow.ToString(token.Format) }
         };
 
         public static string Expand(string source)
