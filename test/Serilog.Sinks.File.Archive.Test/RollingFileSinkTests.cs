@@ -54,7 +54,7 @@ namespace Serilog.Sinks.File.Archive.Tests
         // Serilog RollingFileSink uses a 3-digit zero-filled suffix to denote the file index, but we want archive
         // rolling to continue to work when Serilog is configured to write 1,000+ files.
         [Fact]
-        public void Should_remove_many_old_archives()
+        public void Should_remove_many_old_archives_regression_19()
         {
             const int retainedFiles = 1;
             var archiveWrapper = new ArchiveHooks(retainedFiles);
@@ -82,6 +82,57 @@ namespace Serilog.Sinks.File.Archive.Tests
                 // Ensure the data was GZip compressed, by decompressing and comparing against what we wrote
                 int i = logEvents.Length - retainedFiles - 1;
                 foreach (var gzipFile in files.Where(x => x.EndsWith("gz")))
+                {
+                    var lines = Utils.DecompressLines(gzipFile);
+
+                    lines.Count.ShouldBe(1);
+                    lines[0].ShouldEndWith(logEvents[i].MessageTemplate.Text);
+                    i++;
+                }
+            }
+        }
+
+        // Regression test for #22: https://github.com/cocowalla/serilog-sinks-file-archive/issues/22
+        // Use correct naming pattern to delete files.
+        [Fact]
+        public void Should_remove_many_old_archives_regression_22()
+        {
+            const int retainedFiles = 1;
+            var archiveWrapper = new ArchiveHooks(retainedFiles);
+            var noRemoveWrapper = new ArchiveHooks(5000);
+            var eventsCnt = 1_002;
+            var logEvents = GenerateLogEvents(eventsCnt).ToArray();
+
+            using (var temp = TempFolder.ForCaller())
+            {
+                var path = temp.AllocateFilename("log");
+                var otherLogPath = Path.Combine(temp.Path, "other-log.log");
+
+                // Write events, such that we end up with 1,001 deleted files and 1 retained file
+                WriteLogEvents(path, archiveWrapper, logEvents);
+                WriteLogEvents(otherLogPath, noRemoveWrapper, logEvents);
+
+                // Get all the files in the test directory
+                var files = Directory.GetFiles(temp.Path)
+                    .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                var otherLogPrefix = Path.Combine(temp.Path, Path.GetFileNameWithoutExtension(otherLogPath));
+
+                // We should have a single log file, and 'retainedFiles' 1 gz files
+                files.Count(x => x.EndsWith("log") && !x.StartsWith(otherLogPrefix)).ShouldBe(1);
+                files.Count(x => x.EndsWith("gz") && !x.StartsWith(otherLogPrefix)).ShouldBe(retainedFiles);
+
+                files.Single(x => x.EndsWith("gz") && !x.StartsWith(otherLogPrefix)).ShouldEndWith("_1000.log.gz");
+                files.Single(x => x.EndsWith("log") && !x.StartsWith(otherLogPrefix)).ShouldEndWith("_1001.log");
+
+                // other logs remains untouched
+                files.Count(x => x.EndsWith("log") && x.StartsWith(otherLogPrefix)).ShouldBe(1);
+                files.Count(x => x.EndsWith("gz") && x.StartsWith(otherLogPrefix)).ShouldBe(eventsCnt - 1);
+
+                // Ensure the data was GZip compressed, by decompressing and comparing against what we wrote
+                int i = logEvents.Length - retainedFiles - 1;
+                foreach (var gzipFile in files.Where(x => x.EndsWith("gz") && !x.StartsWith(otherLogPrefix)))
                 {
                     var lines = Utils.DecompressLines(gzipFile);
 

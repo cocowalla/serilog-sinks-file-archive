@@ -17,6 +17,7 @@ namespace Serilog.Sinks.File.Archive
         private readonly CompressionLevel compressionLevel;
         private readonly int retainedFileCountLimit;
         private readonly string targetDirectory;
+        private static readonly object ArchiveLock = new object();
 
         /// <summary>
         /// Create a new ArchiveHooks, which will archive completed log files before they are deleted by Serilog's retention mechanism
@@ -74,34 +75,37 @@ namespace Serilog.Sinks.File.Archive
                     ? TokenExpander.Expand(this.targetDirectory)
                     : Path.GetDirectoryName(path);
 
-                // Create the target directory, if it doesn't already exist
-                if (!Directory.Exists(currentTargetDir))
+                lock (ArchiveLock)
                 {
-                    Directory.CreateDirectory(currentTargetDir!);
-                }
-
-                // Target file path
-                var targetPath = Path.Combine(currentTargetDir, filename);
-
-                // Do we need to compress the file, or simply copy it as-is?
-                if (this.compressionLevel == CompressionLevel.NoCompression)
-                {
-                    System.IO.File.Copy(path, targetPath, true);
-                }
-                else
-                {
-                    using (var sourceStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (var targetStream = new FileStream(targetPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
-                    using (var compressStream = new GZipStream(targetStream, this.compressionLevel))
+                    // Create the target directory, if it doesn't already exist
+                    if (!Directory.Exists(currentTargetDir))
                     {
-                        sourceStream.CopyTo(compressStream);
+                        Directory.CreateDirectory(currentTargetDir!);
                     }
-                }
 
-                // Only apply archive file limit if we are archiving to a non-tokenised path (a constant path)
-                if (this.retainedFileCountLimit > 0 && !this.IsArchivePathTokenised)
-                {
-                    RemoveExcessFiles(currentTargetDir);
+                    // Target file path
+                    var targetPath = Path.Combine(currentTargetDir, filename);
+
+                    // Do we need to compress the file, or simply copy it as-is?
+                    if (this.compressionLevel == CompressionLevel.NoCompression)
+                    {
+                        System.IO.File.Copy(path, targetPath, true);
+                    }
+                    else
+                    {
+                        using (var sourceStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (var targetStream = new FileStream(targetPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
+                        using (var compressStream = new GZipStream(targetStream, this.compressionLevel))
+                        {
+                            sourceStream.CopyTo(compressStream);
+                        }
+                    }
+
+                    // Only apply archive file limit if we are archiving to a non-tokenised path (a constant path)
+                    if (this.retainedFileCountLimit > 0 && !this.IsArchivePathTokenised)
+                    {
+                        RemoveExcessFiles(currentTargetDir, path);
+                    }
                 }
             }
             catch (Exception ex)
@@ -111,29 +115,34 @@ namespace Serilog.Sinks.File.Archive
             }
         }
 
-        private bool IsArchivePathTokenised => this.targetDirectory is not null && TokenExpander.IsTokenised(this.targetDirectory);
+    private bool IsArchivePathTokenised => this.targetDirectory is not null && TokenExpander.IsTokenised(this.targetDirectory);
 
-        private void RemoveExcessFiles(string folder)
+    private void RemoveExcessFiles(string folder, string filePath)
         {
-            var searchPattern = this.compressionLevel != CompressionLevel.NoCompression
+            lock (ArchiveLock)
+            {
+                var baseFileName = Path.GetFileNameWithoutExtension(filePath).Split('_').First();
+                var searchPattern = this.compressionLevel != CompressionLevel.NoCompression
                     ? "*.gz"
                     : "*.*";
 
-            var filesToDelete = Directory.GetFiles(folder, searchPattern)
-                .Select(f => new FileInfo(f))
-                .OrderByDescending(f => f, LogFileComparer.Default)
-                .Skip(this.retainedFileCountLimit)
-                .ToList();
+                var filesToDelete = Directory.GetFiles(folder, searchPattern)
+                    .Where(f => Path.GetFileNameWithoutExtension(f).StartsWith(baseFileName))
+                    .Select(f => new FileInfo(f))
+                    .OrderByDescending(f => f, LogFileComparer.Default)
+                    .Skip(this.retainedFileCountLimit)
+                    .ToList();
 
-            foreach (var file in filesToDelete)
-            {
-                try
+                foreach (var file in filesToDelete)
                 {
-                    file.Delete();
-                }
-                catch (Exception ex)
-                {
-                    SelfLog.WriteLine("Error while deleting file {0}: {1}", file.FullName, ex);
+                    try
+                    {
+                        file.Delete();
+                    }
+                    catch (Exception ex)
+                    {
+                        SelfLog.WriteLine("Error while deleting file {0}: {1}", file.FullName, ex);
+                    }
                 }
             }
         }
@@ -147,22 +156,18 @@ namespace Serilog.Sinks.File.Archive
             // files you should be shot :)
             public int Compare(FileInfo x, FileInfo y)
             {
-
                 if (x is null && y is null)
                     return 0;
                 if (x is null)
                     return -1;
                 if (y is null)
                     return 1;
+                if (x.Name.Length > y.Name.Length)
+                    return 1;
+                if (y.Name.Length > x.Name.Length)
+                    return -1;
 
-
-                string Normalize(string name) => System.Text.RegularExpressions.Regex.Replace(
-                    name,
-                    @"\d+",
-                    m => m.Value.PadLeft(5, '0')
-                );
-
-                return string.Compare(Normalize(x.Name), Normalize(y.Name), StringComparison.OrdinalIgnoreCase);
+                return String.Compare(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
             }
         }
     }
