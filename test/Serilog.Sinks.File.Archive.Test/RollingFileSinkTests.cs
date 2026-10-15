@@ -54,7 +54,48 @@ namespace Serilog.Sinks.File.Archive.Tests
         // Serilog RollingFileSink uses a 3-digit zero-filled suffix to denote the file index, but we want archive
         // rolling to continue to work when Serilog is configured to write 1,000+ files.
         [Fact]
-        public void Should_remove_many_old_archives()
+        public void Should_remove_many_old_archives_regression_19()
+        {
+            const int retainedFiles = 1;
+            var archiveWrapper = new ArchiveHooks(retainedFiles);
+            var logEvents = GenerateLogEvents(1_002).ToArray();
+
+            using (var temp = TempFolder.ForCaller())
+            {
+                var path = temp.AllocateFilename("log");
+
+                // Write events, such that we end up with 1,001 deleted files and 1 retained file
+                WriteLogEvents(path, archiveWrapper, logEvents);
+
+                // Get all the files in the test directory
+                var files = Directory.GetFiles(temp.Path)
+                    .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+                // We should have a single log file, and 'retainedFiles' 1 gz files
+                files.Count(x => x.EndsWith("log")).ShouldBe(1);
+                files.Count(x => x.EndsWith("gz")).ShouldBe(retainedFiles);
+
+                files.Single(x => x.EndsWith("gz")).ShouldEndWith("_1000.log.gz");
+                files.Single(x => x.EndsWith("log")).ShouldEndWith("_1001.log");
+
+                // Ensure the data was GZip compressed, by decompressing and comparing against what we wrote
+                int i = logEvents.Length - retainedFiles - 1;
+                foreach (var gzipFile in files.Where(x => x.EndsWith("gz")))
+                {
+                    var lines = Utils.DecompressLines(gzipFile);
+
+                    lines.Count.ShouldBe(1);
+                    lines[0].ShouldEndWith(logEvents[i].MessageTemplate.Text);
+                    i++;
+                }
+            }
+        }
+
+        // Regression test for #22: https://github.com/cocowalla/serilog-sinks-file-archive/issues/22
+        // Use correct naming pattern to delete files.
+        [Fact]
+        public void Should_remove_many_old_archives_regression_22()
         {
             const int retainedFiles = 1;
             var archiveWrapper = new ArchiveHooks(retainedFiles);
@@ -255,19 +296,6 @@ namespace Serilog.Sinks.File.Archive.Tests
             using (var log = new LoggerConfiguration()
                 .WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, retainedFileCountLimit: 1, hooks: hooks)
                 .CreateLogger())
-            {
-                foreach (var logEvent in logEvents)
-                {
-                    log.Write(logEvent);
-                }
-            }
-        }
-
-        private static void WriteLogEventsNoRemove(string path, ArchiveHooks hooks, LogEvent[] logEvents)
-        {
-            using (var log = new LoggerConfiguration()
-                       .WriteTo.File(path, rollOnFileSizeLimit: true, fileSizeLimitBytes: 1, retainedFileCountLimit: 2000, hooks: hooks)
-                       .CreateLogger())
             {
                 foreach (var logEvent in logEvents)
                 {
