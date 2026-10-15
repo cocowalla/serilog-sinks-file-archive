@@ -2,23 +2,17 @@
 
     <PropertyGroup>
         <Description>Plugin for the Serilog File sink that archives completed log files, optionally compressing them.</Description>
-        <VersionPrefix>1.0.8</VersionPrefix>
+        <VersionPrefix>1.1.0</VersionPrefix>
         <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
         <Authors>Colin Anderson</Authors>
         <Copyright>Copyright © Colin Anderson 2020</Copyright>
-        <TargetFrameworks>net45;netstandard1.6;netstandard2.0;net6.0;net8.0</TargetFrameworks>
+        <TargetFrameworks>net462;net471;netstandard2.0;net6.0;net8.0;net9.0</TargetFrameworks>
         <AssemblyName>Serilog.Sinks.File.Archive</AssemblyName>
         <RootNamespace>Serilog.Sinks.File.Archive</RootNamespace>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <RepositoryUrl>https://github.com/cocowalla/serilog-sinks-file-archive</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-        <!-- Don't reference the full NETStandard.Library -->
-        <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -26,6 +20,7 @@
         <PackageTags>serilog;file;compression;gzip;archive</PackageTags>
         <PackageProjectUrl>https://github.com/cocowalla/serilog-sinks-file-archive</PackageProjectUrl>
         <PackageId>Serilog.Sinks.File.Archive</PackageId>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <SignAssembly>True</SignAssembly>
         <AssemblyOriginatorKeyFile>../../serilog-sinks-file-archive.snk</AssemblyOriginatorKeyFile>
@@ -33,17 +28,6 @@
 
     <ItemGroup>
         <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
-    </ItemGroup>
-
-    <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-        <Reference Include="System" />
-        <Reference Include="System.Core" />
-        <Reference Include="Microsoft.CSharp" />
-        <Reference Include="System.IO.Compression" />
-    </ItemGroup>
-
-    <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.6' ">
-        <PackageReference Include="System.IO.Compression" Version="4.3.0" />
     </ItemGroup>
 
     <ItemGroup>
