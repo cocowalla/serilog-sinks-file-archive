@@ -100,7 +100,7 @@ retention and remain available for manual recovery if archiving is interrupted.
 **Interrupted compression:** Any aborted background compression leaves the uncompressed source file at its renamed
 `{originalPath}.{guid}.archive-pending` path for manual recovery, including when the application exits before
 compression finishes. Background jobs are not automatically awaited at shutdown. You can optionally call
-`await hooks.FlushAsync()` to wait for jobs queued before that call.
+`await hooks.BackgroundRunningArchiveTask()` to wait for jobs queued before that call.
 
 **Failures and recovery:** A failed rename is reported synchronously, allowing Serilog to retain the original file.
 Background failures are reported through

@@ -242,7 +242,7 @@ namespace Serilog.Sinks.File.Archive
             // Directory creation is idempotent and does not need to block other archive writers.
             Directory.CreateDirectory(currentTargetDir);
             var targetPath = Path.Combine(currentTargetDir, filename);
-            List<KeyValuePair<string, Exception>> deletionErrors = null;
+            List<KeyValuePair<string, Exception>> deletionErrors = [];
 
             // Writing and retention share one critical section because the final archive is visible while being written.
             lock (ArchiveLock)
