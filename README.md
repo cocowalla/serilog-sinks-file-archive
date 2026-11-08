@@ -45,6 +45,47 @@ Note that archival only works with *rolling* log files, as files are only delete
 
 As is [standard with Serilog](https://github.com/serilog/serilog/wiki/Lifecycle-of-Loggers#in-all-apps), it's important to call `Log.CloseAndFlush();` before your application ends.
 
+### Background Archiving
+Archiving runs synchronously by default. To move compression and copying off the logging thread, opt in with `archiveAsync: true`:
+
+```csharp
+var hooks = new ArchiveHooks(
+    archiveAsync: true,
+    compressionLevel: CompressionLevel.Fastest,
+    targetDirectory: "C:\\My\\Archive\\Path");
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.File("my-app.log",
+        rollOnFileSizeLimit: true,
+        fileSizeLimitBytes: 10 * 1024 * 1024,
+        retainedFileCountLimit: 2,
+        hooks: hooks)
+    .CreateLogger();
+
+Log.Information("Hello from the application");
+```
+
+The hook synchronously renames each obsolete file to `{originalPath}.{guid}.archive-pending` in its source directory. The rename stays on the source filesystem even if the archive directory is on another volume. Archive filenames remain the same as in synchronous mode, and the pending source is deleted only after archiving succeeds.
+
+Jobs run one at a time per hook instance, in queue order. The queue has no size limit: if archiving falls behind, pending files consume disk space until processed. Directory tokens are resolved when a file is queued. `CompressionLevel.NoCompression` also supports background copying, but its target must differ from the original path.
+
+To limit the number of archived files, use the overload with `retainedFileCountLimit`:
+
+```csharp
+new ArchiveHooks(retainedFileCountLimit: 10, archiveAsync: true,
+    compressionLevel: CompressionLevel.Fastest, targetDirectory: "C:\\My\\Archive\\Path")
+```
+
+Archive retention runs after each successful archive. As with synchronous archiving, a target directory containing date tokens cannot be combined with an archive count limit.
+
+Compression or copying writes directly to the final archive file. A lock shared by hook instances protects destination writes and retention so another job cannot overwrite or delete an archive while it is being written. Renaming source logs and deleting pending sources happen outside that archive lock. The `.archive-pending` sources are excluded from retention and remain available for manual recovery if archiving is interrupted.
+
+**Interrupted compression:** Any aborted background compression leaves the uncompressed source file at its renamed `{originalPath}.{guid}.archive-pending` path for manual recovery, including when the application exits before compression finishes. Background jobs are not automatically awaited at shutdown. You can optionally call `await hooks.BackgroundRunningArchiveTask()` to wait for jobs queued before that call.
+
+**Failures and recovery:** A failed rename is reported synchronously, allowing Serilog to retain the original file. Background failures are reported through [Serilog's `SelfLog`](https://github.com/serilog/serilog/wiki/Debugging-and-Diagnostics) and leave the pending source in place. `BackgroundRunningArchiveTask()` gives a task that waits for jobs to finish but does not propagate background archive failures. Pending sources are excluded from archive retention and are not retried automatically. Recover them manually using the original filename embedded in the pending filename. A failed archive may leave an incomplete destination, so use the retained source for recovery.
+
+The original path no longer exists after a background archive is queued. If combining lifecycle hooks, run any hook that needs the source path before `ArchiveHooks`.
+
 ### Token Replacement
 The `targetDirectory` constructor parameter supports replacement of tokens at runtime.
 
@@ -56,8 +97,7 @@ At present, 2 tokens are supported, `UtcDate` and `Date`. These use [standard .N
 new ArchiveHooks(CompressionLevel.Fastest, "C:\\Archive\\{UtcDate:yyyy}\\{UtcDate:MM}")
 ```
 
-### JSON appsettings.json configuration
-
+### JSON appsettings.json Configuration
 It's also possible to enable archival when configuring Serilog from a configuration file using [Serilog.Settings.Configuration](https://github.com/serilog/serilog-settings-configuration/). To do this, you will first need to create a public static class that can provide the configuration system with a configured instance of `ArchiveHooks`:
 
 ```csharp
@@ -100,5 +140,7 @@ To break this down a bit, what you are doing is specifying the fully qualified t
 
 Other available hooks include:
 
-- [serilog-sinks-file-header](https://github.com/cocowalla/serilog-sinks-file-header): writes a header to the start of each log file
-- [serilog-sinks-file-gzip](https://github.com/cocowalla/serilog-sinks-file-gzip): compresses logs as they are written, using streaming GZIP compression
+- [serilog-sinks-file-header](https://github.com/cocowalla/serilog-sinks-file-header): writes a header to the start of
+  each log file
+- [serilog-sinks-file-gzip](https://github.com/cocowalla/serilog-sinks-file-gzip): compresses logs as they are written,
+  using streaming GZIP compression

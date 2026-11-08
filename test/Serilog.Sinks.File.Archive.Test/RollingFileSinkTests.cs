@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Threading.Tasks;
 using Shouldly;
 using Xunit;
 using Serilog.Events;
@@ -15,11 +16,13 @@ namespace Serilog.Sinks.File.Archive.Tests
         private static readonly LogEvent[] LogEvents = GenerateLogEvents(3).ToArray();
 
         // Test for removing old archive files in the same directory
-        [Fact]
-        public void Should_remove_old_archives()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Should_remove_old_archives(bool archiveAsync)
         {
             const int retainedFiles = 1;
-            var archiveWrapper = new ArchiveHooks(retainedFiles);
+            var archiveWrapper = new ArchiveHooks(retainedFiles, archiveAsync);
 
             using (var temp = TempFolder.ForCaller())
             {
@@ -27,6 +30,7 @@ namespace Serilog.Sinks.File.Archive.Tests
 
                 // Write events, such that we end up with 2 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, LogEvents);
+                await archiveWrapper.BackgroundRunningArchiveTask();
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
@@ -53,11 +57,13 @@ namespace Serilog.Sinks.File.Archive.Tests
         // Regression test for #19: https://github.com/cocowalla/serilog-sinks-file-archive/issues/19
         // Serilog RollingFileSink uses a 3-digit zero-filled suffix to denote the file index, but we want archive
         // rolling to continue to work when Serilog is configured to write 1,000+ files.
-        [Fact]
-        public void Should_remove_many_old_archives_regression_19()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Should_remove_many_old_archives_regression_19(bool archiveAsync)
         {
             const int retainedFiles = 1;
-            var archiveWrapper = new ArchiveHooks(retainedFiles);
+            var archiveWrapper = new ArchiveHooks(retainedFiles, archiveAsync);
             var logEvents = GenerateLogEvents(1_002).ToArray();
 
             using (var temp = TempFolder.ForCaller())
@@ -66,6 +72,7 @@ namespace Serilog.Sinks.File.Archive.Tests
 
                 // Write events, such that we end up with 1,001 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, logEvents);
+                await archiveWrapper.BackgroundRunningArchiveTask();
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
@@ -94,12 +101,14 @@ namespace Serilog.Sinks.File.Archive.Tests
 
         // Regression test for #22: https://github.com/cocowalla/serilog-sinks-file-archive/issues/22
         // Use correct naming pattern to delete files.
-        [Fact]
-        public void Should_remove_many_old_archives_regression_22()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Should_remove_many_old_archives_regression_22(bool archiveAsync)
         {
             const int retainedFiles = 1;
-            var archiveWrapper = new ArchiveHooks(retainedFiles);
-            var noRemoveWrapper = new ArchiveHooks(5000);
+            var archiveWrapper = new ArchiveHooks(retainedFiles, archiveAsync);
+            var noRemoveWrapper = new ArchiveHooks(5000, archiveAsync);
             var eventsCnt = 1_002;
             var logEvents = GenerateLogEvents(eventsCnt).ToArray();
 
@@ -110,7 +119,9 @@ namespace Serilog.Sinks.File.Archive.Tests
 
                 // Write events, such that we end up with 1,001 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, logEvents);
+                await archiveWrapper.BackgroundRunningArchiveTask();
                 WriteLogEvents(otherLogPath, noRemoveWrapper, logEvents);
+                await noRemoveWrapper.BackgroundRunningArchiveTask();
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
@@ -144,10 +155,12 @@ namespace Serilog.Sinks.File.Archive.Tests
         }
 
         // Test for compressing log files in the same directory
-        [Fact]
-        public void Should_compress_deleting_log_files_in_place()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Should_compress_deleting_log_files_in_place(bool archiveAsync)
         {
-            var archiveWrapper = new ArchiveHooks();
+            var archiveWrapper = new ArchiveHooks(archiveAsync);
 
             using (var temp = TempFolder.ForCaller())
             {
@@ -155,6 +168,7 @@ namespace Serilog.Sinks.File.Archive.Tests
 
                 // Write events, such that we end up with 2 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, LogEvents);
+                await archiveWrapper.BackgroundRunningArchiveTask();
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
@@ -179,18 +193,21 @@ namespace Serilog.Sinks.File.Archive.Tests
         }
 
         // Test for copying log files to another directory
-        [Fact]
-        public void Should_copy_deleting_log_files()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Should_copy_deleting_log_files(bool archiveAsync)
         {
             using (var temp = TempFolder.ForCaller())
             {
                 var targetDirPath = temp.AllocateFolderName();
                 var path = temp.AllocateFilename("log");
 
-                var archiveWrapper = new ArchiveHooks(CompressionLevel.NoCompression, targetDirPath);
+                var archiveWrapper = new ArchiveHooks(archiveAsync, CompressionLevel.NoCompression, targetDirPath);
 
                 // Write events, such that we end up with 2 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, LogEvents);
+                await archiveWrapper.BackgroundRunningArchiveTask();
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
@@ -221,18 +238,21 @@ namespace Serilog.Sinks.File.Archive.Tests
         }
 
         // Test for writing compressed log files to another directory
-        [Fact]
-        public void Should_compress_deleting_log_files_in_target_dir()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Should_compress_deleting_log_files_in_target_dir(bool archiveAsync)
         {
             using (var temp = TempFolder.ForCaller())
             {
                 var targetDirPath = temp.AllocateFolderName();
                 var path = temp.AllocateFilename("log");
 
-                var archiveWrapper = new ArchiveHooks(CompressionLevel.Fastest, targetDirPath);
+                var archiveWrapper = new ArchiveHooks(archiveAsync, CompressionLevel.Fastest, targetDirPath);
 
                 // Write events, such that we end up with 2 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, LogEvents);
+                await archiveWrapper.BackgroundRunningArchiveTask();
 
                 // Get all the files in the test directory
                 var files = Directory.GetFiles(temp.Path)
@@ -264,8 +284,10 @@ namespace Serilog.Sinks.File.Archive.Tests
             }
         }
 
-        [Fact]
-        public void Should_expand_tokens_in_target_path()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Should_expand_tokens_in_target_path(bool archiveAsync)
         {
             using (var temp = TempFolder.ForCaller())
             {
@@ -273,10 +295,11 @@ namespace Serilog.Sinks.File.Archive.Tests
                 var targetDirPath = Path.Combine(subfolder, "{Date:yyyy}");
                 var path = temp.AllocateFilename("log");
 
-                var archiveWrapper = new ArchiveHooks(CompressionLevel.NoCompression, targetDirPath);
+                var archiveWrapper = new ArchiveHooks(archiveAsync, CompressionLevel.NoCompression, targetDirPath);
 
                 // Write events, such that we end up with 2 deleted files and 1 retained file
                 WriteLogEvents(path, archiveWrapper, LogEvents);
+                await archiveWrapper.BackgroundRunningArchiveTask();
 
                 // Get the final, expanded target directory
                 var targetDirs = Directory.GetDirectories(subfolder);
